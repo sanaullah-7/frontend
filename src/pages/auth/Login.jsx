@@ -5,33 +5,69 @@ import { Stethoscope } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/common/Button'
 import { Input } from '../../components/common/Input'
+import { validators, validateForm, hasErrors } from '../../utils/validation'
 import api from '../../api/axios'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '' })
+  const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [apiStatus, setApiStatus] = useState('checking')
 
   useEffect(() => {
     api.get('/health')
       .then(({ data }) => {
-        if (data.mongodb?.connected) setApiStatus('connected')
-        else setApiStatus('degraded')
+        setApiStatus('connected')
       })
       .catch(() => setApiStatus('offline'))
   }, [])
 
+  // Validate field on change
+  const validateField = (fieldName, value) => {
+    let error = null
+    switch (fieldName) {
+      case 'email':
+        error = validators.email(value)
+        break
+      case 'password':
+        error = validators.password(value, 6)
+        break
+      default:
+        break
+    }
+    setErrors((prev) => ({ ...prev, [fieldName]: error }))
+  }
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setForm((prev) => ({ ...prev, [name]: value }))
+    validateField(name, value)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    // Validate all fields
+    const newErrors = validateForm(form, {
+      email: validators.email,
+      password: (val) => validators.password(val, 6),
+    })
+
+    if (hasErrors(newErrors)) {
+      setErrors(newErrors)
+      toast.error('Please fix the errors below')
+      return
+    }
+
     setLoading(true)
     try {
       const user = await login(form.email, form.password)
       toast.success(`Welcome back, ${user.name}!`)
       navigate(`/${user.role}`)
     } catch (err) {
-      toast.error(err.message || 'Login failed')
+      toast.error(err.response?.data?.message || 'Login failed')
     } finally {
       setLoading(false)
     }
@@ -45,6 +81,7 @@ export default function Login() {
       patient: { email: 'patient@clinic.com', password: 'patient123' },
     }
     setForm(demos[role])
+    setErrors({})
   }
 
   return (
@@ -63,10 +100,9 @@ export default function Login() {
             apiStatus === 'connected' ? 'text-emerald-600' :
             apiStatus === 'checking' ? 'text-slate-400' : 'text-red-600'
           }`}>
-            {apiStatus === 'connected' && '● Backend & MongoDB connected'}
-            {apiStatus === 'checking' && '● Checking connection...'}
-            {apiStatus === 'degraded' && '● MongoDB not connected — run backend'}
-            {apiStatus === 'offline' && '● Backend offline — run: cd backend && npm run dev'}
+            {apiStatus === 'connected' && '✓ Backend connected'}
+            {apiStatus === 'checking' && '◷ Checking connection...'}
+            {apiStatus === 'offline' && '✗ Backend offline — run: npm run dev'}
           </p>
           <p className="mt-1 text-sm text-slate-500">
             No account? <Link to="/register" className="text-primary-600 hover:underline">Register</Link>
@@ -76,18 +112,26 @@ export default function Login() {
             <Input
               label="Email"
               type="email"
+              name="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={handleChange}
+              error={errors.email}
               required
+              placeholder="your@email.com"
             />
             <Input
               label="Password"
               type="password"
+              name="password"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              onChange={handleChange}
+              error={errors.password}
               required
+              placeholder="Enter your password"
             />
-            <Button type="submit" className="w-full" loading={loading}>Login</Button>
+            <Button type="submit" className="w-full" loading={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
           </form>
 
           <div className="mt-6">
@@ -96,10 +140,11 @@ export default function Login() {
               {['admin', 'doctor', 'receptionist', 'patient'].map((role) => (
                 <button
                   key={role}
+                  type="button"
                   onClick={() => demoLogin(role)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs capitalize hover:bg-slate-50"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs capitalize transition hover:bg-slate-50 hover:border-primary-300"
                 >
-                  {role}
+                  Demo {role}
                 </button>
               ))}
             </div>

@@ -42,6 +42,9 @@ export default function Register() {
           <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <Select label="Register as" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
             <option value="patient">Patient</option>
+            <option value="doctor">Doctor</option>
+            <option value="admin">Admin</option>
+            <option value="receptionist">Receptionist</option>
           </Select>
           {form.role === 'patient' && (
             <>
