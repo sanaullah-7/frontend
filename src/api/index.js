@@ -37,8 +37,9 @@ export const diagnosisApi = {
 }
 
 export const aiApi = {
-  symptomCheck: (data) => api.post('/ai/symptom-check', data),
+  diagnose: (data) => api.post('/ai/diagnose', data),
   explainPrescription: (data) => api.post('/ai/explain-prescription', data),
+  recommendations: (data) => api.post('/ai/recommendations', data),
   riskFlags: (patientId) => api.get(`/ai/risk-flags/${patientId}`),
 }
 

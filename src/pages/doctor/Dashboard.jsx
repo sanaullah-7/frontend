@@ -11,7 +11,10 @@ export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    analyticsApi.doctor().then(({ data }) => setData(data)).finally(() => setLoading(false))
+    analyticsApi.doctor()
+      .then(({ data }) => setData(data?.data || data))
+      .catch((err) => console.error('Failed to load analytics:', err))
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <Loader fullScreen />

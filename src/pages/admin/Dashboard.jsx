@@ -13,7 +13,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    analyticsApi.admin().then(({ data }) => setData(data)).finally(() => setLoading(false))
+    analyticsApi.admin()
+      .then(({ data }) => setData(data?.data || data))
+      .catch((err) => console.error('Failed to load analytics:', err))
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <Loader fullScreen />

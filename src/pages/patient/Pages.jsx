@@ -21,8 +21,8 @@ export default function PatientDashboard() {
     Promise.all([appointmentApi.getAll(), prescriptionApi.getAll()])
       .then(([a, p]) =>
         setStats({
-          appointments: a.data.appointments?.length || 0,
-          prescriptions: p.data.prescriptions?.length || 0,
+          appointments: a.data?.data?.length || 0,
+          prescriptions: p.data?.data?.length || 0,
         })
       )
       .catch(() => {})
@@ -50,10 +50,10 @@ export function PatientAppointments() {
     setLoading(true)
     try {
       const [a, d] = await Promise.all([appointmentApi.getAll(), userApi.getDoctors()])
-      setAppointments(a.data.appointments || [])
-      setDoctors(d.data.doctors || [])
+      setAppointments(a.data?.data || [])
+      setDoctors(d.data?.data || [])
     } catch (err) {
-      toast.error(err.message)
+      toast.error(err.response?.data?.message || 'Failed to load data')
     } finally {
       setLoading(false)
     }
@@ -63,15 +63,19 @@ export function PatientAppointments() {
 
   const book = async (e) => {
     e.preventDefault()
+    if (!form.doctorId || !form.date || !form.reason) {
+      toast.error('Please fill all fields')
+      return
+    }
     setSubmitting(true)
     try {
       await appointmentApi.create(form)
-      toast.success('Appointment requested')
+      toast.success('Appointment requested successfully')
       setModal(false)
       setForm({ doctorId: '', date: '', reason: '' })
       fetchAll()
     } catch (err) {
-      toast.error(err.message)
+      toast.error(err.response?.data?.message || 'Failed to book appointment')
     } finally {
       setSubmitting(false)
     }
@@ -134,8 +138,8 @@ export function PatientPrescriptions() {
   useEffect(() => {
     prescriptionApi
       .getAll()
-      .then(({ data }) => setPrescriptions(data.prescriptions || []))
-      .catch((err) => toast.error(err.message))
+      .then(({ data }) => setPrescriptions(data?.data || []))
+      .catch((err) => toast.error(err.response?.data?.message || 'Failed to load prescriptions'))
       .finally(() => setLoading(false))
   }, [])
 
